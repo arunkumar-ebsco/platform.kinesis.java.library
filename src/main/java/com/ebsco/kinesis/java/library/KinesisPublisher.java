@@ -18,7 +18,7 @@ import java.util.concurrent.BlockingQueue;
  * Created by aganapathy on 5/1/17.
  * This class is responsible to consume blocking queue and sends to AWS kinesis in batches of 3
  */
-public class BlockingQueueConsumer implements Runnable{
+public class KinesisPublisher implements Runnable{
 
     private String STREAM_NAME = "arun_test_stream";
 
@@ -28,7 +28,7 @@ public class BlockingQueueConsumer implements Runnable{
 
     protected BlockingQueue<TransactionLogging> queue;
 
-    public BlockingQueueConsumer(BlockingQueue<TransactionLogging> queue) {
+    public KinesisPublisher(BlockingQueue<TransactionLogging> queue) {
         this.queue = queue;
         AWSCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
         try {
@@ -49,8 +49,7 @@ public class BlockingQueueConsumer implements Runnable{
                 if(isValidated(transactionLogging)) {
                     String partitionKey = transactionLogging.getSessionId();
                     ByteBuffer data = ByteBuffer.wrap(transactionLogging.getPayload().getBytes("UTF-8"));
-
-                    addEntry(new PutRecordsRequestEntry().withPartitionKey(partitionKey).withData(data));
+                    addEntry(new PutRecordsRequestEntry().  withPartitionKey(partitionKey) .withData(data));
                 }
             }catch(Exception e){
                 e.printStackTrace();

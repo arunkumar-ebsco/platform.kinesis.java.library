@@ -1,4 +1,4 @@
-import com.ebsco.kinesis.java.library.BlockingQueueConsumer;
+import com.ebsco.kinesis.java.library.KinesisPublisher;
 import com.ebsco.kinesis.java.library.TransactionLogging;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,7 +17,7 @@ public class Client {
         BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<TransactionLogging>(10);
 
         final ExecutorService exec = Executors.newCachedThreadPool();
-        final BlockingQueueConsumer consumer = new BlockingQueueConsumer(queue);
+        final KinesisPublisher consumer = new KinesisPublisher(queue);
         exec.execute(consumer);
 
 
