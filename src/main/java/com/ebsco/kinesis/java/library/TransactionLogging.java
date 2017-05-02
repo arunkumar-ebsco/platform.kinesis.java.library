@@ -30,6 +30,6 @@ public class TransactionLogging {
     }
 
     @Override public String toString() {
-        return "com.ebsco.kinesis.java.library.TransactionLogging{" + "sessionId='" + sessionId + '\'' + ", payload='" + payload + '\'' + '}';
+        return "TransactionLogging{" + "sessionId='" + sessionId + '\'' + ", payload='" + payload + '\'' + '}';
     }
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Created by aganapathy on 5/1/17.
+ * This is client stub code that produces to blocking queue and starts the consumer thread
  */
 public class Client {
 
@@ -15,6 +16,9 @@ public class Client {
 
         BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<TransactionLogging>(10);
 
+        final ExecutorService exec = Executors.newCachedThreadPool();
+        final BlockingQueueConsumer consumer = new BlockingQueueConsumer(queue);
+        exec.execute(consumer);
 
 
         try {
@@ -25,10 +29,8 @@ public class Client {
             e.printStackTrace();
         }
 
-        final ExecutorService exec = Executors.newCachedThreadPool();
-        final BlockingQueueConsumer consumer = new BlockingQueueConsumer(queue);
-        exec.execute(consumer);
-        System.out.println(consumer);
+
+
 
     }
 }
