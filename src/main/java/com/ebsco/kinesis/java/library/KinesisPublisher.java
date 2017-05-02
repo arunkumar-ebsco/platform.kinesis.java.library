@@ -1,18 +1,22 @@
 package com.ebsco.kinesis.java.library;
 
-import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+
 
 /**
  * Created by aganapathy on 5/1/17.
@@ -20,25 +24,35 @@ import java.util.concurrent.BlockingQueue;
  */
 public class KinesisPublisher implements Runnable{
 
-    private String STREAM_NAME = "arun_test_stream";
+    private final String STREAM_NAME = "artful_dodgers_demo_stream";
 
-    protected AmazonKinesis kinesis;
+    private final String REGION = "us-east-1";
+
+    protected AmazonKinesis kinesisClient;
 
     protected List<PutRecordsRequestEntry> entries;
 
     protected BlockingQueue<TransactionLogging> queue;
 
+    private static final Random RANDOM = new Random();
+
+
+    /**
+     * Constructor to initialize kinesis client
+     * @param queue
+     */
+
     public KinesisPublisher(BlockingQueue<TransactionLogging> queue) {
-        this.queue = queue;
-        AWSCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
         try {
-            credentialsProvider.getCredentials();
-        } catch (Exception ex) {
-            throw new AmazonClientException("Cannot load the credentials from the credential profiles file. "
-                    + "Please make sure that your credentials file is at the correct ", ex);
+            this.queue = queue;
+            AWSCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+            AWSCredentials awsCredentials = credentialsProvider.getCredentials();
+            kinesisClient = AmazonKinesisClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).withRegion(REGION).build();
+
+            entries = new ArrayList<>();
+        }catch(Exception e){
+            e.printStackTrace();
         }
-        kinesis = new AmazonKinesisClient(credentialsProvider);
-        entries = new ArrayList<>();
     }
 
     @Override
@@ -47,9 +61,16 @@ public class KinesisPublisher implements Runnable{
             try{
                 TransactionLogging transactionLogging = queue.take();
                 if(isValidated(transactionLogging)) {
-                    String partitionKey = transactionLogging.getSessionId();
+                    String explicitHashkey1 = new BigInteger(128, RANDOM).toString(10);
+                    String explicitHashkey2= new BigInteger(128, RANDOM).toString(10);
+                    String explicitHashkey;
                     ByteBuffer data = ByteBuffer.wrap(transactionLogging.getPayload().getBytes("UTF-8"));
-                    addEntry(new PutRecordsRequestEntry().  withPartitionKey(partitionKey) .withData(data));
+                    if(Integer.parseInt(transactionLogging.getSessionId()) == 9 || Integer.parseInt(transactionLogging.getSessionId()) == 1){
+                        explicitHashkey = explicitHashkey1;
+                    }else{
+                        explicitHashkey = explicitHashkey2;
+                    }
+                    addEntry(new PutRecordsRequestEntry().withPartitionKey(transactionLogging.getSessionId()).withData(data).withExplicitHashKey(explicitHashkey));
                 }
             }catch(Exception e){
                 e.printStackTrace();
@@ -72,7 +93,7 @@ public class KinesisPublisher implements Runnable{
      */
 
     protected void flush() {
-        PutRecordsResult putRecordsResult = kinesis.putRecords(new PutRecordsRequest()
+        PutRecordsResult putRecordsResult = kinesisClient.putRecords(new PutRecordsRequest()
                 .withStreamName(STREAM_NAME)
                 .withRecords(entries));
 

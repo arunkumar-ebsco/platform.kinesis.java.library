@@ -24,6 +24,7 @@ public class Client {
         try {
             for (int i = 1; i < 11; i++) {
                 queue.put(new TransactionLogging(String.valueOf(i), new String("Sample Payload ")));
+                Thread.sleep(2000); // Sleep for 2 seconds and then enqueue
             }
         }catch(InterruptedException e){
             e.printStackTrace();
