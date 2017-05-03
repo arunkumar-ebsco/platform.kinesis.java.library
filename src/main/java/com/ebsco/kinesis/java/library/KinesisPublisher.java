@@ -10,19 +10,19 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequest;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
-
+import java.util.logging.Logger;
 
 /**
  * Created by aganapathy on 5/1/17.
  * This class is responsible to consume blocking queue and sends to AWS kinesis in batches of 3
  */
 public class KinesisPublisher implements Runnable{
+
+    private final static Logger LOGGER = Logger.getLogger(KinesisPublisher.class.getName());
 
     private final String STREAM_NAME = "artful_dodgers_demo_stream";
 
@@ -34,7 +34,6 @@ public class KinesisPublisher implements Runnable{
 
     protected BlockingQueue<TransactionLogging> queue;
 
-    private static final Random RANDOM = new Random();
 
 
     /**
@@ -61,16 +60,8 @@ public class KinesisPublisher implements Runnable{
             try{
                 TransactionLogging transactionLogging = queue.take();
                 if(isValidated(transactionLogging)) {
-                    String explicitHashkey1 = new BigInteger(128, RANDOM).toString(10);
-                    String explicitHashkey2= new BigInteger(128, RANDOM).toString(10);
-                    String explicitHashkey;
                     ByteBuffer data = ByteBuffer.wrap(transactionLogging.getPayload().getBytes("UTF-8"));
-                    if(Integer.parseInt(transactionLogging.getSessionId()) == 9 || Integer.parseInt(transactionLogging.getSessionId()) == 1){
-                        explicitHashkey = explicitHashkey1;
-                    }else{
-                        explicitHashkey = explicitHashkey2;
-                    }
-                    addEntry(new PutRecordsRequestEntry().withPartitionKey(transactionLogging.getSessionId()).withData(data).withExplicitHashKey(explicitHashkey));
+                    addEntry(new PutRecordsRequestEntry().withPartitionKey(transactionLogging.getSessionId()).withData(data));
                 }
             }catch(Exception e){
                 e.printStackTrace();
@@ -85,7 +76,10 @@ public class KinesisPublisher implements Runnable{
      */
 
     private boolean isValidated(TransactionLogging transactionLogging){
-        return true;
+        if(transactionLogging != null) {
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
     }
 
     /**
@@ -97,10 +91,9 @@ public class KinesisPublisher implements Runnable{
                 .withStreamName(STREAM_NAME)
                 .withRecords(entries));
 
-
         System.out.println(putRecordsResult.getRecords().size()+" records sent to kinesis streams");
         entries.clear();
-        putRecordsResult.getRecords().forEach((System.out::println));
+        putRecordsResult.getRecords().forEach(System.out::println);
         System.out.println("Failed record count "+putRecordsResult.getFailedRecordCount());
 
         System.out.println("\n************************************************************************\n");
@@ -109,7 +102,7 @@ public class KinesisPublisher implements Runnable{
     }
 
     /**
-     * This method watches the count of entries(list) and decides whether to publish or not
+     * This method watches the count of entries(list) and decides whether to publish or to add to entries list
      * @param entry
      */
     protected void addEntry(PutRecordsRequestEntry entry) {
