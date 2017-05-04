@@ -6,9 +6,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
-import com.amazonaws.services.kinesis.model.PutRecordsRequest;
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
-import com.amazonaws.services.kinesis.model.PutRecordsResult;
+import com.amazonaws.services.kinesis.model.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -86,17 +84,26 @@ public class KinesisPublisher implements Runnable{
      * This method published to AWS kinesis streams in batch of 3
      */
 
-    protected void flush() {
-        PutRecordsResult putRecordsResult = kinesisClient.putRecords(new PutRecordsRequest()
-                .withStreamName(STREAM_NAME)
-                .withRecords(entries));
+    protected void flush(){
+        DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest().withStreamName(STREAM_NAME);
+        StreamDescription streamDescription = kinesisClient.describeStream(describeStreamRequest).getStreamDescription();
+        if(null != streamDescription){
+            if ("ACTIVE".equalsIgnoreCase(streamDescription.getStreamStatus())) {
+                PutRecordsResult putRecordsResult = kinesisClient
+                        .putRecords(new PutRecordsRequest().withStreamName(STREAM_NAME).withRecords(entries));
 
-        System.out.println(putRecordsResult.getRecords().size()+" records sent to kinesis streams");
-        entries.clear();
-        putRecordsResult.getRecords().forEach(System.out::println);
-        System.out.println("Failed record count "+putRecordsResult.getFailedRecordCount());
+                System.out.println(putRecordsResult.getRecords().size() + " records sent to kinesis streams");
+                entries.clear();
+                putRecordsResult.getRecords().forEach(System.out::println);
+                System.out.println("Failed record count " + putRecordsResult.getFailedRecordCount());
 
-        System.out.println("\n************************************************************************\n");
+                System.out.println("\n************************************************************************\n");
+            } else {
+                System.out.println("Stream is not active");
+            }
+        }
+
+
 
 
     }

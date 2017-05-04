@@ -14,7 +14,7 @@ public class Client {
 
     public static void main(String[] args) {
 
-        BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<TransactionLogging>(10);
+        BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<>(10);
 
         final ExecutorService exec = Executors.newCachedThreadPool();
         final KinesisPublisher consumer = new KinesisPublisher(queue);
@@ -23,7 +23,7 @@ public class Client {
 
         try {
             for (int i = 1; i < 11; i++) {
-                queue.put(new TransactionLogging(String.valueOf(i), new String("Sample Payload ")));
+                queue.offer(new TransactionLogging(String.valueOf(i), new String("Sample Payload ")));
                 Thread.sleep(2000); // Sleep for 2 seconds and then enqueue
             }
         }catch(InterruptedException e){
