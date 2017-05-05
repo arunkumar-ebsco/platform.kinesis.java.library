@@ -16,17 +16,18 @@ public class Client {
 
         BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<>(10);
 
-        final ExecutorService exec = Executors.newCachedThreadPool();
-        final KPLKinesisPublisher consumer = new KPLKinesisPublisher(queue);
-        exec.execute(consumer);
+
 
 
         try {
-            for (int i = 1; i < 3; i++) {
-                queue.offer(new TransactionLogging(String.valueOf(i), new String("Sample Payload ")));
-                Thread.sleep(2000); // Sleep for 2 seconds and then enqueue
+            for (int i = 1; i < 5; i++) {
+                queue.add(new TransactionLogging(String.valueOf(i), String.valueOf(i).concat(" payload")));
+                //Thread.sleep(2000); // Sleep for 2 seconds and then enqueue
             }
-        }catch(InterruptedException e){
+            final ExecutorService exec = Executors.newCachedThreadPool();
+            final KPLKinesisPublisher consumer = new KPLKinesisPublisher(queue);
+            exec.execute(consumer);
+        }catch(Exception e){
             e.printStackTrace();
         }
 

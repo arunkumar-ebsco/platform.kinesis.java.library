@@ -21,7 +21,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class KPLKinesisPublisher implements Runnable {
 
-    private final String STREAM_NAME = "artful_dodgers_demo_stream";
+    private final String STREAM_NAME = "kpl_test_stream";
 
     protected final static String REGION = "us-east-1";
 
@@ -48,41 +48,35 @@ public class KPLKinesisPublisher implements Runnable {
     @Override
     public void run() {
         try {
-            TransactionLogging transactionLogging = inputQueue.take();
-            String partitionKey = transactionLogging.getSessionId();
-            String payload = transactionLogging.getPayload();
-            ByteBuffer data = ByteBuffer.wrap(payload.getBytes("UTF-8"));
-            ListenableFuture<UserRecordResult> f =
-                    kinesis.addUserRecord(STREAM_NAME, partitionKey, data);
+            while (inputQueue.size() >= 0) {
+                TransactionLogging transactionLogging = inputQueue.take();
+                String partitionKey = transactionLogging.getSessionId();
+                String payload = transactionLogging.getPayload();
+                ByteBuffer data = ByteBuffer.wrap(payload.getBytes("UTF-8"));
+                ListenableFuture<UserRecordResult> f = kinesis.addUserRecord(STREAM_NAME, partitionKey, data);
+                kinesis.flush();
 
-            Futures.addCallback(f, new FutureCallback<UserRecordResult>() {
-                @Override
-                public void onSuccess(UserRecordResult result) {
+                Futures.addCallback(f, new FutureCallback<UserRecordResult>() {
+                    @Override public void onSuccess(UserRecordResult result) {
 
-                    System.out.println((String.format(
-                                "Succesfully put record, partitionKey=%s, "
-                                        + "payload=%s, sequenceNumber=%s, "
-                                        + "shardId=%s",
-                                partitionKey, payload, result.getSequenceNumber(),
-                                result.getShardId()
-                                )));
+                        System.out.println((String.format("Succesfully put record, sequenceNumber=%s, " + "shardId=%s",
+                                result.getSequenceNumber(), result.getShardId())));
 
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
-                    if (t instanceof UserRecordFailedException) {
-                        UserRecordFailedException e =
-                                (UserRecordFailedException) t;
-                       
-                        e.printStackTrace();
-                        System.out.println(String.format(
-                                "Record failed to put, partitionKey=%s, "
-                                        + "payload=%s",
-                                partitionKey, payload));
                     }
-                };
-            });
+
+                    @Override public void onFailure(Throwable t) {
+                        if (t instanceof UserRecordFailedException) {
+                            UserRecordFailedException e = (UserRecordFailedException) t;
+
+                            e.printStackTrace();
+                            System.out.println(String.format("Record failed to put, partitionKey=%s, " + "payload=%s",
+                                    partitionKey, payload));
+                        }
+                    }
+
+                    ;
+                });
+            }
         }
             
         catch (Exception e){
