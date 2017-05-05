@@ -1,4 +1,4 @@
-import com.ebsco.kinesis.java.library.KinesisPublisher;
+import com.ebsco.kinesis.java.library.KPLKinesisPublisher;
 import com.ebsco.kinesis.java.library.TransactionLogging;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,12 +17,12 @@ public class Client {
         BlockingQueue<TransactionLogging> queue = new ArrayBlockingQueue<>(10);
 
         final ExecutorService exec = Executors.newCachedThreadPool();
-        final KinesisPublisher consumer = new KinesisPublisher(queue);
+        final KPLKinesisPublisher consumer = new KPLKinesisPublisher(queue);
         exec.execute(consumer);
 
 
         try {
-            for (int i = 1; i < 11; i++) {
+            for (int i = 1; i < 3; i++) {
                 queue.offer(new TransactionLogging(String.valueOf(i), new String("Sample Payload ")));
                 Thread.sleep(2000); // Sleep for 2 seconds and then enqueue
             }
